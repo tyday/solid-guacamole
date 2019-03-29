@@ -2,5 +2,6 @@ Section-02/.pytest_cache
 Section-02/__pycache__/
 
 venv/
+venv2/
 .vscode/settings.json
 .gitignore
