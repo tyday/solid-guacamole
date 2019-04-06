@@ -59,9 +59,14 @@ class Item(Resource):
         return item, 201
     
     def delete(self, name):
-        global items
-        items = list(filter(lambda x: x['name'] != name, items))
-        return {'item': items}
+        
+        # global items
+        # items = list(filter(lambda x: x['name'] != name, items))
+        if Item.find_by_name(name):
+            query = "DELETE FROM items WHERE name=?"
+            queryDB(query,(name,))
+            return {'message': 'Item deleted'}
+        return {'message':'Item not found.'}, 404
 
     def put(self, name):
         data = Item.parser.parse_args()
