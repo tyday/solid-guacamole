@@ -56,9 +56,11 @@ class Item(Resource):
         item = ItemModel.find_by_name(name)
         # updated_item = {'name': name, 'price': data['price']}
         updated_item = ItemModel(name,data['price'])
+        status = 200
         if item is None:
             try:
                 updated_item.insert()
+                status = 201
             except:
                 return {"message": "An error occurred inserting the item."}, 500
         else:
@@ -67,7 +69,7 @@ class Item(Resource):
             except:
                 raise
                 return {"message": "An error occurred updating the item."}, 500
-        return updated_item.json()
+        return updated_item.json(), status
 
     
 class ItemList(Resource):
