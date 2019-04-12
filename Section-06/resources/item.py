@@ -1,6 +1,7 @@
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 import sqlite3
+from db import db
 
 from models.item import ItemModel
 
@@ -31,7 +32,7 @@ class Item(Resource):
         item = ItemModel(name,data['price'])
 
         try:
-            item.insert()
+            item.save_to_db()
         except:
             return {"message": "An error occurred inserting the item."}, 500
 
@@ -39,51 +40,39 @@ class Item(Resource):
 
     @jwt_required()
     def delete(self, name):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
-
-        query = "DELETE FROM {table} WHERE name=?".format(table=self.TABLE_NAME)
-        cursor.execute(query, (name,))
-
-        connection.commit()
-        connection.close()
-
-        return {'message': 'Item deleted'}
+        item = ItemModel.find_by_name(name)
+        if item:
+            item.delete_from_db()
+        return {"message":"Item deleted"}
 
     @jwt_required()
     def put(self, name):
         data = Item.parser.parse_args()
         item = ItemModel.find_by_name(name)
-        # updated_item = {'name': name, 'price': data['price']}
-        updated_item = ItemModel(name,data['price'])
-        status = 200
         if item is None:
-            try:
-                updated_item.insert()
-                status = 201
-            except:
-                return {"message": "An error occurred inserting the item."}, 500
+            item = ItemModel(name,data['price'])
         else:
-            try:
-                updated_item.update()
-            except:
-                raise
-                return {"message": "An error occurred updating the item."}, 500
-        return updated_item.json(), status
+            item.price = data['price']
+        item.save_to_db()
+        return item.json()
 
     
 class ItemList(Resource):
     TABLE_NAME = 'items'
 
     def get(self):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
-
-        query = "SELECT * FROM {table}".format(table=self.TABLE_NAME)
-        result = cursor.execute(query)
         items = []
-        for row in result:
-            items.append({'name': row[0], 'price': row[1]})
-        connection.close()
+        for item in db.session.query(items):
+            items.append(item.json())
+
+        # connection = sqlite3.connect('data.db')
+        # cursor = connection.cursor()
+
+        # query = "SELECT * FROM {table}".format(table=self.TABLE_NAME)
+        # result = cursor.execute(query)
+        # items = []
+        # for row in result:
+        #     items.append({'name': row[0], 'price': row[1]})
+        # connection.close()
 
         return {'items': items}
